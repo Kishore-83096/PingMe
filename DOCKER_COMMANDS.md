@@ -883,3 +883,54 @@ git add .
 git commit -m "Update PingMe"
 git push
 ```
+
+---
+
+# 33. Nginx Stage 1 Docker Commands
+Run these commands from the PingMe repository root. Nginx reads its runtime settings from `nginx/.env`; the environment file is passed to the container and is not copied into the image.
+
+### Build the Nginx image
+
+```powershell
+docker build --no-cache -f nginx/Dockerfile -t pingme-nginx:stage1 ./nginx
+```
+
+### Run the Nginx container
+
+```powershell
+docker run -d `
+  --name pingme-nginx-stage1 `
+  --env-file nginx/.env `
+  -p 8080:8080 `
+  pingme-nginx:stage1
+```
+
+### Check the proxied health endpoint
+
+```powershell
+curl.exe http://localhost:8080/api/auth/health
+```
+
+Expected response:
+
+```json
+{"database":"connected","redis":"connected","status":"ok"}
+```
+
+### Stop the Nginx container
+
+```powershell
+docker stop pingme-nginx-stage1
+```
+
+### Remove the Nginx container
+
+```powershell
+docker rm pingme-nginx-stage1
+```
+
+### Remove the Nginx image
+
+```powershell
+docker rmi pingme-nginx:stage1
+```

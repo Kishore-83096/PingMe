@@ -30,9 +30,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --------------------------------------------------
-      # 3. Build Docker image
+      # 3. Verify .env files are not tracked
       # --------------------------------------------------
-      - name: Build Docker image
+      - name: Verify environment files are not tracked
+        shell: bash
+        run: |
+          tracked_env_files="$(git ls-files \
+            'backend/.env' \
+            'redis/.env' \
+            'nginx/.env' \
+            'frontend/.env')"
+
+          if [ -n "$tracked_env_files" ]; then
+            echo "ERROR: The following environment files are tracked by Git:"
+            echo "$tracked_env_files"
+            exit 1
+          fi
+
+          echo "No protected .env files are tracked."
+
+      # --------------------------------------------------
+      # 4. Build Backend Docker image
+      # --------------------------------------------------
+      - name: Build Backend Docker image
         run: |
           docker build \
             -f backend/Dockerfile \
@@ -40,7 +60,7 @@ jobs:
             ./backend
 
       # --------------------------------------------------
-      # 4. Python syntax check inside Docker
+      # 5. Python syntax check
       # --------------------------------------------------
       - name: Check Python syntax
         run: |
@@ -49,7 +69,7 @@ jobs:
             python -m compileall -q /app
 
       # --------------------------------------------------
-      # 5. Run Ruff linting inside Docker
+      # 6. Run Ruff linting
       # --------------------------------------------------
       - name: Run Ruff lint
         run: |
@@ -58,7 +78,7 @@ jobs:
             ruff check /app
 
       # --------------------------------------------------
-      # 6. Run Auth tests inside Docker
+      # 7. Run Auth tests
       # --------------------------------------------------
       - name: Run Auth tests inside Docker
         env:
@@ -71,7 +91,7 @@ jobs:
             python -m pytest -v
 
       # --------------------------------------------------
-      # 7. Verify Flask application can be created
+      # 8. Verify Flask application
       # --------------------------------------------------
       - name: Verify Flask application
         env:
@@ -84,15 +104,93 @@ jobs:
             python -c "from app import create_app; app=create_app(); print(app.url_map)"
 
       # --------------------------------------------------
-      # 8. Verify Docker image
+      # 9. Verify Gunicorn command
       # --------------------------------------------------
-      - name: Verify Docker image
+      - name: Verify Gunicorn command
+        run: |
+          docker inspect pingme-backend:ci \
+            --format '{{json .Config.Cmd}}' | grep -i gunicorn
+
+      # --------------------------------------------------
+      # 10. Start Backend container
+      # --------------------------------------------------
+      - name: Start Backend container
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run -d \
+            --name pingme-backend-ci \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e REDIS_URL="redis://ci-test:6379" \
+            -p 5000:5000 \
+            pingme-backend:ci
+
+      # --------------------------------------------------
+      # 11. Verify Gunicorn startup
+      # --------------------------------------------------
+      - name: Verify Gunicorn startup
+        shell: bash
+        run: |
+          sleep 3
+
+          docker logs pingme-backend-ci
+
+          docker logs pingme-backend-ci 2>&1 | grep -q "Starting gunicorn"
+          docker logs pingme-backend-ci 2>&1 | grep -q "Listening at: http://0.0.0.0:5000"
+
+      # --------------------------------------------------
+      # 12. Stop Backend container
+      # --------------------------------------------------
+      - name: Stop Backend container
+        if: always()
+        run: |
+          docker rm -f pingme-backend-ci || true
+
+      # --------------------------------------------------
+      # 13. Build Nginx Docker image
+      # --------------------------------------------------
+      - name: Build Nginx Docker image
+        run: |
+          docker build \
+            -f nginx/Dockerfile \
+            -t pingme-nginx:ci \
+            ./nginx
+
+      # --------------------------------------------------
+      # 14. Validate Nginx configuration
+      # --------------------------------------------------
+      - name: Validate Nginx configuration
+        run: |
+          docker run --rm \
+            -e NGINX_PORT=8080 \
+            -e BACKEND_HOST=example.com \
+            -e BACKEND_PORT=443 \
+            pingme-nginx:ci \
+            nginx -t
+
+      # --------------------------------------------------
+      # 15. Verify Backend Docker image
+      # --------------------------------------------------
+      - name: Verify Backend Docker image
         run: |
           docker image inspect pingme-backend:ci > /dev/null
 
       # --------------------------------------------------
-      # 9. Final status
+      # 16. Verify Nginx Docker image
+      # --------------------------------------------------
+      - name: Verify Nginx Docker image
+        run: |
+          docker image inspect pingme-nginx:ci > /dev/null
+
+      # --------------------------------------------------
+      # 17. Final status
       # --------------------------------------------------
       - name: CI completed successfully
         run: |
-          echo "PingMe Auth CI passed successfully."
+          echo "PingMe CI passed successfully."
+          echo "Backend Docker build: PASSED"
+          echo "Gunicorn WSGI startup: PASSED"
+          echo "Auth tests: PASSED"
+          echo "Nginx Docker build: PASSED"
+          echo "Nginx configuration: PASSED"
+          echo "Environment protection: PASSED"
