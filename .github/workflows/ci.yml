@@ -168,6 +168,7 @@ jobs:
             -e NGINX_PORT=8080 \
             -e BACKEND_HOST=example.com \
             -e BACKEND_PORT=443 \
+            -e BACKEND_URL=https://example.com \
             -e NGINX_PROXY_TOKEN="ci-test-token" \
             pingme-nginx:ci \
             nginx -t
