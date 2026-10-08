@@ -2,7 +2,6 @@ from flask import Blueprint, jsonify
 
 from database import check_database_connection
 
-
 auth_bp = Blueprint("auth", __name__)
 
 

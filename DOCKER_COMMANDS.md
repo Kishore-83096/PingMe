@@ -188,6 +188,23 @@ The Docker test verifies the application from inside the same container environm
 
 ---
 
+### Run Ruff Inside Docker
+Ruff is installed in the backend image, so linting can run in a temporary container without starting the API service:
+
+```
+docker run --rm pingme-backend:stage1 ruff check /app
+```
+
+Expected:
+
+```
+All checks passed!
+```
+
+Rebuild the image first if the source code or dependencies have changed. The `--rm` option removes the temporary container when Ruff finishes.
+
+---
+
 # 9. Stop Docker Container
 
 ```
@@ -293,13 +310,19 @@ This is the recommended complete verification sequence.
 docker build -f backend/Dockerfile -t pingme-backend:stage1 ./backend
 ```
 
-## Step 2 — Run Container
+## Step 2 — Run Ruff Lint Check
+
+```
+docker run --rm pingme-backend:stage1 ruff check /app
+```
+
+## Step 3 — Run Container
 
 ```
 docker run -d --name pingme-auth-stage1 --env-file .env -p 5000:5000 pingme-backend:stage1
 ```
 
-## Step 3 — Check Container
+## Step 4 — Check Container
 
 ```
 docker ps
@@ -310,7 +333,7 @@ Expected:
 pingme-auth-stage1
 ```
 
-## Step 4 — Check Logs
+## Step 5 — Check Logs
 
 ```
 docker logs pingme-auth-stage1
@@ -324,7 +347,7 @@ Expected Flask server:
 * Running on http://127.0.0.1:5000
 ```
 
-## Step 5 — Check Health Endpoint
+## Step 6 — Check Health Endpoint
 
 ```
 curl.exe http://localhost:5000/api/auth/health
@@ -335,7 +358,7 @@ Expected:
 {"database":"connected","status":"ok"}
 ```
 
-## Step 6 — Run Tests Inside Container
+## Step 7 — Run Tests Inside Container
 
 ```
 docker exec pingme-auth-stage1 python -m pytest -v
@@ -346,19 +369,19 @@ Expected:
 1 passed
 ```
 
-## Step 7 — Stop Container
+## Step 8 — Stop Container
 
 ```
 docker stop pingme-auth-stage1
 ```
 
-## Step 8 — Remove Container
+## Step 9 — Remove Container
 
 ```
 docker rm pingme-auth-stage1
 ```
 
-## Step 9 — Remove Image
+## Step 10 — Remove Image
 
 ```
 docker rmi pingme-backend:stage1
@@ -699,6 +722,12 @@ curl.exe http://localhost:5000/api/auth/health
 
 ```
 docker exec pingme-auth-stage1 python -m pytest -v
+```
+
+### Ruff lint
+
+```
+docker run --rm pingme-backend:stage1 ruff check /app
 ```
 
 ### Stop
