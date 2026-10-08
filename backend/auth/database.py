@@ -14,12 +14,11 @@ def check_database_connection():
         with psycopg.connect(
             DATABASE_URL,
             connect_timeout=5,
-        ) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
+        ) as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
 
         return True
 
-    except Exception:
+    except psycopg.Error:
         return False

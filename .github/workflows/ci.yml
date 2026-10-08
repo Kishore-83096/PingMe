@@ -53,11 +53,7 @@ jobs:
       # --------------------------------------------------
       - name: Run Ruff lint
         run: |
-          docker run --rm \
-            pingme-backend:ci \
-            python -m pip install --no-cache-dir ruff
-
-          docker run --rm \
+            docker run --rm \
             pingme-backend:ci \
             ruff check /app
 
