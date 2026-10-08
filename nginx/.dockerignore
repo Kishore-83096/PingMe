@@ -3,21 +3,6 @@
 .env.*
 !.env.example
 
-# Python caches, environments, and test output
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-env/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.tox/
-.nox/
-.coverage
-.coverage.*
-htmlcov/
-
 # Editors, logs, and operating system files
 .vscode/
 .idea/

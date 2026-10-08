@@ -3,20 +3,22 @@
 .env.*
 !.env.example
 
-# Python caches, environments, and test output
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-env/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.tox/
-.nox/
-.coverage
-.coverage.*
-htmlcov/
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+.npm/
+.cache/
+.vite/
+.next/
+.turbo/
+.vercel/
+logs/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
 # Editors, logs, and operating system files
 .vscode/

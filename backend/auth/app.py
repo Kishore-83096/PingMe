@@ -1,24 +1,31 @@
-from flask import Flask
-from flask_cors import CORS
+import hmac
 
+from flask import Flask, request
+
+from config import NGINX_PROXY_TOKEN
 from routes import auth_bp
 
 
 def create_app():
     app = Flask(__name__)
 
-    CORS(
-        app,
-        resources={
-            r"/api/*": {
-                "origins": [
-                    "http://localhost:5173",
-                ]
-            }
-        },
-    )
+    @app.before_request
+    def validate_nginx_proxy():
+        token = request.headers.get("X-PingMe-Proxy-Token")
 
-    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+        if not token or not hmac.compare_digest(
+            token,
+            NGINX_PROXY_TOKEN,
+        ):
+            return {
+                "status": "error",
+                "message": "Invalid proxy authentication",
+            }, 403
+
+    app.register_blueprint(
+        auth_bp,
+        url_prefix="/api/auth",
+    )
 
     return app
 

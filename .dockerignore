@@ -1,41 +1,58 @@
+# Version control and local tooling
 .git
 .github
-
-.env
-.env.*
-!.env.example
-
-__pycache__
-*.py[cod]
-
-.pytest_cache
-.coverage
-htmlcov
-
-.venv
-venv
-env
-
 .vscode
 .idea
 
-*.log
-.DS_Store
-Thumbs.db
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
 
-frontend
-README.md
+# Dependencies and generated output
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.npm
+**/.cache
+**/.vite
+**/.next
+**/.turbo
+**/.vercel
+**/logs
+**/*.tsbuildinfo
 
+# Python caches and environments
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/venv
+**/env
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.tox
+**/.nox
+**/.coverage
+**/.coverage.*
+**/htmlcov
 
+# Logs, temporary files, and local secrets
+**/*.log
+**/*.tmp
+**/*.temp
+**/*.swp
+**/*.swo
+**/*~
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
 
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.venv/
-venv/
-.env
-.env.*
-!.env.example
-.git/
-.github/
-*.log
+# Operating system files and documentation
+**/.DS_Store
+**/Thumbs.db
+**/Desktop.ini
+**/*.md
+docker-compose.override.yml
