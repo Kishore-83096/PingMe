@@ -87,6 +87,7 @@ jobs:
           docker run --rm \
             -e DATABASE_URL="$DATABASE_URL" \
             -e REDIS_URL="redis://ci-test:6379" \
+            -e NGINX_PROXY_TOKEN="ci-test-token" \
             pingme-backend:ci \
             python -m pytest -v
 
@@ -100,6 +101,7 @@ jobs:
           docker run --rm \
             -e DATABASE_URL="$DATABASE_URL" \
             -e REDIS_URL="redis://ci-test:6379" \
+            -e NGINX_PROXY_TOKEN="ci-test-token" \
             pingme-backend:ci \
             python -c "from app import create_app; app=create_app(); print(app.url_map)"
 
@@ -122,6 +124,7 @@ jobs:
             --name pingme-backend-ci \
             -e DATABASE_URL="$DATABASE_URL" \
             -e REDIS_URL="redis://ci-test:6379" \
+            -e NGINX_PROXY_TOKEN="ci-test-token" \
             -p 5000:5000 \
             pingme-backend:ci
 
@@ -165,6 +168,7 @@ jobs:
             -e NGINX_PORT=8080 \
             -e BACKEND_HOST=example.com \
             -e BACKEND_PORT=443 \
+            -e NGINX_PROXY_TOKEN="ci-test-token" \
             pingme-nginx:ci \
             nginx -t
 
