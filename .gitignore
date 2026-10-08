@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# Local production test environment
+nginx/.env.production-test
 
 # Node.js dependencies and generated output
 node_modules/
