@@ -6,24 +6,107 @@ on:
       - "**"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  auth-health-test:
-    name: Auth Health Tests
+  auth-ci:
+    name: Auth Backend CI
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------
+      # 1. Checkout
+      # --------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --------------------------------------------------
+      # 2. Secret leak scan
+      # --------------------------------------------------
+      - name: Scan repository for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --------------------------------------------------
+      # 3. Build Docker image
+      # --------------------------------------------------
       - name: Build Docker image
         run: |
           docker build \
             -f backend/Dockerfile \
-            -t pingme-backend:stage1 \
+            -t pingme-backend:ci \
             ./backend
 
-      - name: Run Auth tests inside Docker
+      # --------------------------------------------------
+      # 4. Python syntax check inside Docker
+      # --------------------------------------------------
+      - name: Check Python syntax
         run: |
           docker run --rm \
-            pingme-backend:stage1 \
+            pingme-backend:ci \
+            python -m compileall -q /app
+
+      # --------------------------------------------------
+      # 5. Run Ruff linting inside Docker
+      # --------------------------------------------------
+      - name: Run Ruff lint
+        run: |
+          docker run --rm \
+            pingme-backend:ci \
+            python -m pip install --no-cache-dir ruff
+
+          docker run --rm \
+            pingme-backend:ci \
+            ruff check /app
+
+      # --------------------------------------------------
+      # 6. Run pytest inside Docker
+      # --------------------------------------------------
+      - name: Run Auth tests inside Docker
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            pingme-backend:ci \
             python -m pytest -v
+
+      # --------------------------------------------------
+      # 7. Verify Flask application can be created
+      # --------------------------------------------------
+      - name: Verify Flask application
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            pingme-backend:ci \
+            python -c "from app import create_app; app=create_app(); print(app.url_map)"
+
+      # --------------------------------------------------
+      # 8. Verify health endpoint through Flask test client
+      # --------------------------------------------------
+      - name: Verify Auth health endpoint
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            pingme-backend:ci \
+            python -c "from app import create_app; app=create_app(); client=app.test_client(); response=client.get('/api/auth/health'); print(response.status_code); print(response.get_json()); assert response.status_code == 200; assert response.get_json()['status'] == 'ok'; assert response.get_json()['database'] == 'connected'"
+
+      # --------------------------------------------------
+      # 9. Docker image information
+      # --------------------------------------------------
+      - name: Verify Docker image
+        run: |
+          docker image inspect pingme-backend:ci > /dev/null
+
+      # --------------------------------------------------
+      # 10. Final status
+      # --------------------------------------------------
+      - name: CI completed successfully
+        run: |
+          echo "PingMe Auth CI passed successfully."

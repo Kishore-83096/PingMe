@@ -5,8 +5,11 @@ def test_health():
     app = create_app()
     client = app.test_client()
 
-    response = client.get("/health")
+    response = client.get("/api/auth/health")
 
     assert response.status_code == 200
     assert response.is_json
-    assert response.get_json() == {"status": "ok"}
+    assert response.get_json() == {
+        "database": "connected",
+        "status": "ok",
+    }
