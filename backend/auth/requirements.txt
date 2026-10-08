@@ -5,3 +5,4 @@ gunicorn==23.0.0
 python-dotenv
 psycopg[binary]
 ruff
+redis==6.4.0

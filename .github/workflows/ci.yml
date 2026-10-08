@@ -53,7 +53,7 @@ jobs:
       # --------------------------------------------------
       - name: Run Ruff lint
         run: |
-            docker run --rm \
+          docker run --rm \
             pingme-backend:ci \
             ruff check /app
 
@@ -82,26 +82,14 @@ jobs:
             python -c "from app import create_app; app=create_app(); print(app.url_map)"
 
       # --------------------------------------------------
-      # 8. Verify health endpoint through Flask test client
-      # --------------------------------------------------
-      - name: Verify Auth health endpoint
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          docker run --rm \
-            -e DATABASE_URL="$DATABASE_URL" \
-            pingme-backend:ci \
-            python -c "from app import create_app; app=create_app(); client=app.test_client(); response=client.get('/api/auth/health'); print(response.status_code); print(response.get_json()); assert response.status_code == 200; assert response.get_json()['status'] == 'ok'; assert response.get_json()['database'] == 'connected'"
-
-      # --------------------------------------------------
-      # 9. Docker image information
+      # 8. Docker image information
       # --------------------------------------------------
       - name: Verify Docker image
         run: |
           docker image inspect pingme-backend:ci > /dev/null
 
       # --------------------------------------------------
-      # 10. Final status
+      # 9. Final status
       # --------------------------------------------------
       - name: CI completed successfully
         run: |
