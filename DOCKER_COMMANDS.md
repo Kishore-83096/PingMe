@@ -1,13 +1,15 @@
 # PingMe — Docker & Development Commands
 This file contains commonly used commands for building, running, testing, stopping, and removing the PingMe authentication backend Docker container.
 
+`backend/.env` is the shared environment file for the entire backend service/container. Use `backend/.env.example` as the safe template. The real environment file is supplied to Docker at runtime, not copied into the image.
+
 ---
 
 ## 1. Build Docker Image
 Run from the PingMe root directory:
 
 ```
-docker build -f backend/Dockerfile -t pingme-backend:stage1 ./backend
+docker build --no-cache -f backend/Dockerfile -t pingme-backend:stage1 ./backend
 ```
 
 ### Verify the image
@@ -19,13 +21,13 @@ docker images pingme-backend
 ---
 
 ## 2. Run Docker Container
-Run the container with the environment variables from the root `.env` file:
+Run the container with the environment variables from `backend/.env`:
 
 ```
-docker run -d --name pingme-auth-stage1 --env-file .env -p 5000:5000 pingme-backend:stage1
+docker run -d --name pingme-auth-stage1 --env-file backend/.env -p 5000:5000 pingme-backend:stage1
 ```
 
-> The `--env-file .env` option is required because the application needs `DATABASE_URL` to connect to Neon PostgreSQL.
+> The `--env-file backend/.env` option injects the backend's runtime environment without adding the real environment file to the image.
 
 ---
 
@@ -307,7 +309,7 @@ This is the recommended complete verification sequence.
 ## Step 1 — Build Image
 
 ```
-docker build -f backend/Dockerfile -t pingme-backend:stage1 ./backend
+docker build --no-cache -f backend/Dockerfile -t pingme-backend:stage1 ./backend
 ```
 
 ## Step 2 — Run Ruff Lint Check
@@ -319,7 +321,7 @@ docker run --rm pingme-backend:stage1 ruff check /app
 ## Step 3 — Run Container
 
 ```
-docker run -d --name pingme-auth-stage1 --env-file .env -p 5000:5000 pingme-backend:stage1
+docker run -d --name pingme-auth-stage1 --env-file backend/.env -p 5000:5000 pingme-backend:stage1
 ```
 
 ## Step 4 — Check Container
@@ -446,12 +448,13 @@ Expected workflow stages:
 
 ```
 Checkout repository       ✓
-Set up Python             ✓
-Install dependencies      ✓
-Run health tests          ✓
+Gitleaks secret scan      ✓
+Docker image build        ✓
+Syntax, Ruff, and pytest  ✓
+Backend and health checks ✓
 ```
 
-> The GitHub Actions environment must have access to the required environment variables if the tests require a real Neon PostgreSQL connection.
+> CI receives required values from GitHub Actions secrets and injects them into Docker at runtime; it does not use a developer's local `backend/.env`.
 
 ---
 
@@ -546,18 +549,13 @@ exit
 ---
 
 # 26. Check Environment Variables Inside Container
-To verify that the container received the environment configuration:
+Check that `DATABASE_URL` was injected without displaying its value:
 
 ```
-docker exec pingme-auth-stage1 env
-```
-To specifically check whether `DATABASE_URL` exists:
-
-```
-docker exec pingme-auth-stage1 env | findstr DATABASE_URL
+docker exec pingme-auth-stage1 sh -c 'test -n "$DATABASE_URL" && echo DATABASE_URL is set'
 ```
 
-> Do not share the output publicly because it contains database credentials.
+This prints only whether the variable is set.
 
 ---
 
@@ -581,10 +579,11 @@ PingME/
 │   │   └── tests/
 │   │       └── test_health.py
 │   │
+│   ├── .env
+│   ├── .env.example
+│   ├── .dockerignore
 │   └── Dockerfile
 │
-├── .env
-├── .env.example
 ├── .gitignore
 ├── .dockerignore
 └── README.md
@@ -691,13 +690,13 @@ SELECT 1;
 ### Build
 
 ```
-docker build -f backend/Dockerfile -t pingme-backend:stage1 ./backend
+docker build --no-cache -f backend/Dockerfile -t pingme-backend:stage1 ./backend
 ```
 
 ### Run
 
 ```
-docker run -d --name pingme-auth-stage1 --env-file .env -p 5000:5000 pingme-backend:stage1
+docker run -d --name pingme-auth-stage1 --env-file backend/.env -p 5000:5000 pingme-backend:stage1
 ```
 
 ### Check
@@ -816,7 +815,7 @@ pingme-auth-stage1
 ### Health Endpoint
 
 ```text
-http://localhost:5000/health
+http://localhost:5000/api/auth/health
 ```
 
 ---
@@ -826,13 +825,13 @@ http://localhost:5000/health
 ### Build
 
 ```powershell
-docker build -f backend/Dockerfile -t pingme-backend:stage1 ./backend
+docker build --no-cache -f backend/Dockerfile -t pingme-backend:stage1 ./backend
 ```
 
 ### Run
 
 ```powershell
-docker run -d --name pingme-auth-stage1 --env-file .env -p 5000:5000 pingme-backend:stage1
+docker run -d --name pingme-auth-stage1 --env-file backend/.env -p 5000:5000 pingme-backend:stage1
 ```
 
 ### Check

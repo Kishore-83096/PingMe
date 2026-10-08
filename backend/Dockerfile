@@ -6,9 +6,11 @@ COPY auth/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY auth/ .
+COPY auth/ ./auth/
 
 RUN find /app -type f -exec chmod 644 {} +
+
+WORKDIR /app/auth
 
 EXPOSE 5000
 

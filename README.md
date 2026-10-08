@@ -12,7 +12,11 @@ The current implementation contains the initial Flask authentication service fou
 - Docker support
 - GitHub Actions CI
 
+## Backend Environment
+
+`backend/.env` is the environment file for the entire backend service and its Docker container. Start from `backend/.env.example` and provide the required local values there; do not commit `backend/.env`. All backend modules use the shared backend configuration.
+
 ## Authentication Health Check
 
 ```text
-GET /health
+GET /api/auth/health
