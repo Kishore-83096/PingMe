@@ -43,8 +43,7 @@ function App() {
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Testing the local React frontend against the deployed PingMe
-            Nginx API.
+            Testing the local React frontend against the PingMe Nginx API.
           </p>
         </div>
 
@@ -54,7 +53,7 @@ function App() {
           </p>
 
           <code className="break-all text-sm text-blue-300">
-            {import.meta.env.VITE_API_BASE_URL}/api/auth/health
+            {import.meta.env.VITE_API_BASE_URL}/api/health/
           </code>
         </div>
 

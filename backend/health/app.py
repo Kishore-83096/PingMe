@@ -4,7 +4,7 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from config import NGINX_PROXY_TOKEN
-from routes import auth_bp
+from routes import health_bp, health_check
 
 
 def create_app():
@@ -60,8 +60,14 @@ def create_app():
     # Routes
     # --------------------------------------------------
     app.register_blueprint(
-        auth_bp,
-        url_prefix="/api/auth",
+        health_bp,
+        url_prefix="/api/health",
+    )
+    app.add_url_rule(
+        "/api/auth/health",
+        endpoint="legacy_health_check",
+        view_func=health_check,
+        methods=["GET"],
     )
 
     return app

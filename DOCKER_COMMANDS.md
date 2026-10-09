@@ -1,5 +1,5 @@
 # PingMe — Docker & Development Commands
-This file contains commonly used commands for building, running, testing, stopping, and removing the PingMe authentication backend Docker container.
+This file contains commonly used commands for building, running, testing, stopping, and removing the PingMe Health Service backend Docker container.
 
 `backend/.env` is the shared environment file for the entire backend service/container. Use `backend/.env.example` as the safe template. The real environment file is supplied to Docker at runtime, not copied into the image.
 
@@ -67,49 +67,44 @@ Press `Ctrl + C` to stop following the logs.
 
 ---
 
-# 6. Test Authentication Health Endpoint
-The current PingMe authentication health endpoint is:
+# 6. Test the Health Endpoint through Nginx
+The current PingMe Health Service endpoint is:
 
 ```
-http://localhost:5000/api/auth/health
+http://localhost:8080/api/health/
 ```
-This endpoint checks the Flask service and verifies connectivity to Neon PostgreSQL.
+This endpoint checks the Flask service and verifies connectivity to Neon PostgreSQL and Redis/Valkey. Nginx injects the required proxy token.
 
 ### PowerShell
 
 ```
-Invoke-RestMethod http://localhost:5000/api/auth/health
+Invoke-RestMethod http://localhost:8080/api/health/
 ```
-Expected:
-
-```
-database status
--------- ------
-connected ok
-```
+The returned JSON contains `status`, `database`, and `redis` fields.
 
 ### Raw JSON
 
 ```
-curl.exe http://localhost:5000/api/auth/health
+curl.exe http://localhost:8080/api/health/
 ```
 Expected:
 
 ```
-{"database":"connected","status":"ok"}
+{"database":"connected","redis":"connected","status":"ok"}
 ```
 
 ### Browser
 Open:
 
 ```
-http://localhost:5000/api/auth/health
+http://localhost:8080/api/health/
 ```
 Expected:
 
 ```
 {
   "database": "connected",
+  "redis": "connected",
   "status": "ok"
 }
 ```
@@ -119,43 +114,43 @@ Expected:
 ```
 Client
   ↓
-Flask Authentication API
+Flask Health Service through Nginx
   ↓
-/api/auth/health
+/api/health/
   ↓
-Database connection check
+PostgreSQL and Redis/Valkey connection checks
   ↓
 Neon PostgreSQL
   ↓
 SELECT 1
   ↓
-Database connected
+PostgreSQL connected
+  ↓
+Redis/Valkey PING
+  ↓
+Redis/Valkey connected
   ↓
 HTTP 200
 ```
-If PostgreSQL is unavailable, the endpoint returns:
+If either required dependency is unavailable, the endpoint returns HTTP 503. The corresponding field is `"disconnected"` while the available dependency remains `"connected"`, for example:
 
 ```
 {
-  "database": "disconnected",
+  "database": "connected",
+  "redis": "disconnected",
   "status": "error"
 }
-```
-with HTTP status:
-
-```
-503 Service Unavailable
 ```
 
 ---
 
 # 7. Run Tests Locally
-The tests are located inside the authentication service.
+The tests are located inside the Health Service.
 
 From the PingMe root directory:
 
 ```
-cd backend/auth
+cd backend/health
 ```
 Run:
 
@@ -168,7 +163,7 @@ Return to the PingMe root directory:
 cd ../..
 ```
 
-> The health test calls the actual `/api/auth/health` endpoint and verifies the database-connected response.
+> The health test calls the canonical `/api/health/` endpoint and verifies the database and Redis/Valkey response.
 
 ---
 
@@ -352,7 +347,7 @@ Expected Flask server:
 ## Step 6 — Check Health Endpoint
 
 ```
-curl.exe http://localhost:5000/api/auth/health
+curl.exe http://localhost:8080/api/health/
 ```
 Expected:
 
@@ -442,7 +437,7 @@ Actions
     ↓
 PingMe CI
     ↓
-Auth Health Tests
+Health Service tests
 ```
 Expected workflow stages:
 
@@ -570,7 +565,7 @@ PingME/
 │       └── ci.yml
 │
 ├── backend/
-│   ├── auth/
+│   ├── health/
 │   │   ├── app.py
 │   │   ├── config.py
 │   │   ├── database.py
@@ -591,27 +586,27 @@ PingME/
 
 ---
 
-# 28. PingMe Authentication Service
-Current authentication service health endpoint:
+# 28. PingMe Health Service
+Current Health Service endpoint:
 
 ```
-GET /api/auth/health
+GET /api/health/
 ```
 Expected successful response:
 
 ```
 {
   "database": "connected",
+  "redis": "connected",
   "status": "ok"
 }
 ```
 The endpoint verifies that:
 
 1. Flask is running.
-2. The authentication service is reachable.
-3. `DATABASE_URL` is available.
-4. The application can connect to Neon PostgreSQL.
-5. PostgreSQL successfully responds to `SELECT 1`.
+2. The Health Service is reachable through Nginx, which supplies the required proxy token.
+3. The application can connect to Neon PostgreSQL and Redis/Valkey.
+4. PostgreSQL successfully responds to `SELECT 1`, and Redis/Valkey responds to `PING`.
 
 ---
 
@@ -626,7 +621,7 @@ Flask server starts                   ✓
 
 Port 5000 is accessible               ✓
 
-Authentication health endpoint works ✓
+Health endpoint works               ✓
 
 Neon PostgreSQL connection works      ✓
 
@@ -659,16 +654,16 @@ pingme-backend:stage1
 pingme-auth-stage1
 ```
 
-### Authentication Port
+### Health Service Port
 
 ```
 5000
 ```
 
-### Authentication Health Endpoint
+### Health Endpoint
 
 ```
-http://localhost:5000/api/auth/health
+http://localhost:8080/api/health/
 ```
 
 ### Database
@@ -714,7 +709,7 @@ docker logs pingme-auth-stage1
 ### Health
 
 ```
-curl.exe http://localhost:5000/api/auth/health
+curl.exe http://localhost:8080/api/health/
 ```
 
 ### Tests
@@ -764,11 +759,11 @@ git push
                           │
                           ▼
                   ┌───────────────┐
-                  │  Flask Auth   │
+                  │ Flask Health  │
                   │     API       │
                   └───────┬───────┘
                           │
-                          │ /api/auth/health
+                          │ /api/health/
                           ▼
                   ┌───────────────┐
                   │    Health     │
@@ -782,7 +777,7 @@ git push
                   │  PostgreSQL   │
                   └───────────────┘
 ```
-Stage 1 currently focuses only on establishing and verifying the backend-to-database connection.
+Stage 1 currently focuses on checking the backend's PostgreSQL and Redis/Valkey connections.
 
 Authentication features such as registration, login, logout, JWT handling, password hashing, refresh tokens, sessions, and user tables will be implemented in later stages.
 
@@ -806,7 +801,7 @@ pingme-backend:stage1
 pingme-auth-stage1
 ```
 
-### Auth Port
+### Health Service Port
 
 ```text
 5000
@@ -815,7 +810,7 @@ pingme-auth-stage1
 ### Health Endpoint
 
 ```text
-http://localhost:5000/api/auth/health
+http://localhost:8080/api/health/
 ```
 
 ---
@@ -849,7 +844,7 @@ docker logs pingme-auth-stage1
 ### Health
 
 ```powershell
-curl.exe http://localhost:5000/api/auth/health
+curl.exe http://localhost:8080/api/health/
 ```
 
 ### Tests
@@ -908,7 +903,7 @@ docker run -d `
 ### Check the proxied health endpoint
 
 ```powershell
-curl.exe http://localhost:8080/api/auth/health
+curl.exe http://localhost:8080/api/health/
 ```
 
 Expected response:

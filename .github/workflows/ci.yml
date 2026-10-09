@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  auth-ci:
-    name: Auth Backend CI
+  health-ci:
+    name: Health Backend CI
     runs-on: ubuntu-latest
 
     steps:
@@ -78,9 +78,9 @@ jobs:
             ruff check /app
 
       # --------------------------------------------------
-      # 7. Run Auth tests
+      # 7. Run Health tests
       # --------------------------------------------------
-      - name: Run Auth tests inside Docker
+      - name: Run Health tests inside Docker
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -195,7 +195,7 @@ jobs:
           echo "PingMe CI passed successfully."
           echo "Backend Docker build: PASSED"
           echo "Gunicorn WSGI startup: PASSED"
-          echo "Auth tests: PASSED"
+          echo "Health tests: PASSED"
           echo "Nginx Docker build: PASSED"
           echo "Nginx configuration: PASSED"
           echo "Environment protection: PASSED"

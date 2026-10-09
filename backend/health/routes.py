@@ -3,13 +3,13 @@ from flask import Blueprint, jsonify
 from database import check_database_connection
 from redis_client import check_redis_connection
 
-auth_bp = Blueprint("auth", __name__)
+health_bp = Blueprint("health", __name__)
 
 
-@auth_bp.get("/health")
+@health_bp.get("/")
 def health_check():
     """
-    Health endpoint for the PingMe authentication service.
+    Health endpoint for the PingMe health service.
 
     The API is considered healthy only when PostgreSQL
     and Redis/Valkey are both reachable.
@@ -34,4 +34,3 @@ def health_check():
             "redis": "connected" if redis_connected else "disconnected",
         }
     ), 503
-

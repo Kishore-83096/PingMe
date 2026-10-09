@@ -12,7 +12,7 @@ export interface HealthResponse {
 
 export async function checkBackendHealth(): Promise<HealthResponse> {
   const response = await fetch(
-    `${API_BASE_URL}/api/auth/health`,
+    `${API_BASE_URL}/api/health/`,
     {
       method: "GET",
       headers: {
