@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  health-ci:
-    name: Health Backend CI
+  backend-ci:
+    name: Backend | Build, tests, and startup
     runs-on: ubuntu-latest
 
     steps:
@@ -150,7 +150,23 @@ jobs:
           docker rm -f pingme-backend-ci || true
 
       # --------------------------------------------------
-      # 13. Build Nginx Docker image
+      # Verify the backend Docker image
+      # --------------------------------------------------
+      - name: Verify Backend Docker image
+        run: |
+          docker image inspect pingme-backend:ci > /dev/null
+
+  nginx-ci:
+    name: Nginx | Build and configuration validation
+    runs-on: ubuntu-latest
+    needs: backend-ci
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # Build Nginx Docker image
       # --------------------------------------------------
       - name: Build Nginx Docker image
         run: |
@@ -160,7 +176,7 @@ jobs:
             ./nginx
 
       # --------------------------------------------------
-      # 14. Validate Nginx configuration
+      # Validate Nginx configuration
       # --------------------------------------------------
       - name: Validate Nginx configuration
         run: |
@@ -174,28 +190,42 @@ jobs:
             nginx -t
 
       # --------------------------------------------------
-      # 15. Verify Backend Docker image
-      # --------------------------------------------------
-      - name: Verify Backend Docker image
-        run: |
-          docker image inspect pingme-backend:ci > /dev/null
-
-      # --------------------------------------------------
-      # 16. Verify Nginx Docker image
+      # Verify Nginx Docker image
       # --------------------------------------------------
       - name: Verify Nginx Docker image
         run: |
           docker image inspect pingme-nginx:ci > /dev/null
 
-      # --------------------------------------------------
-      # 17. Final status
-      # --------------------------------------------------
-      - name: CI completed successfully
+  frontend-ci:
+    name: Frontend | Lint and production build
+    runs-on: ubuntu-latest
+    needs: nginx-ci
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Frontend checks completed
         run: |
-          echo "PingMe CI passed successfully."
-          echo "Backend Docker build: PASSED"
-          echo "Gunicorn WSGI startup: PASSED"
-          echo "Health tests: PASSED"
-          echo "Nginx Docker build: PASSED"
-          echo "Nginx configuration: PASSED"
-          echo "Environment protection: PASSED"
+          echo "Frontend lint: PASSED"
+          echo "Frontend production build: PASSED"
